@@ -52,6 +52,11 @@ tasks:
     desc: |
       Install agent gateway argo application
     cmds: 
-      - kubectl apply -f manifests/agentgw/app-crds.yaml
-      - kubectl apply -f manifests/agentgw/app-chart.yaml
+      - kubectl apply -f infra/agentgateway/app-crds.yaml
+      - kubectl apply -f infra/agentgateway/app-chart.yaml
 
+  deploy:
+    desc: |
+      Deploy workloads onto the cluster - presumes that all dependencies have been isntalled already
+    cmds:
+      - helm upgrade --install aire-lab ./chart
