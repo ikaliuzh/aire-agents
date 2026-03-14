@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+tasks:
+  up:
+    desc: |
+      Bootstrap fresh lab environment
+    deps:
+      - kind-create
+    cmds:
+      - task: install-argo
+
+  down:
+    desc: |
+      Tear-down the lab environment
+    deps:
+      - kind-destroy
+
+  kind-create:
+    desc: |
+      Create a kind cluster with context aire-lab
+    cmd: kind create cluster --name aire-lab --config infra/kind/config.yaml
+    status:
+      - kind get clusters | grep -qx aire-lab
+
+  kind-destroy:
+    desc: |
+      Prune the lab kind cluster - needed for fresh installation
+    cmd: kind delete cluster --name aire-lab
+
+
+  install-argo:
+    desc: |
+      Install argo cd chart onto the cluster; has to be done as part of bootstrap
+    cmds:
+      - kubectl create namespace argocd --context kind-aire-lab
+      - kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml --context kind-aire-lab
+    status:
+      - kubectl get namespace argocd
