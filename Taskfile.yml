@@ -2,6 +2,8 @@
 
 version: '3'
 
+dotenv: ['.env']
+
 tasks:
   up:
     desc: |
@@ -55,8 +57,26 @@ tasks:
       - kubectl apply -f infra/agentgateway/app-crds.yaml
       - kubectl apply -f infra/agentgateway/app-chart.yaml
 
+  apply-secrets:
+    desc: |
+      Apply secrets necessary for proper application functioning
+    cmds:
+      - |
+        kubectl apply -f- <<EOF
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: vertex-secret
+          namespace: agentgateway-system
+        type: Opaque
+        stringData:
+          Authorization: $VERTEX_AI_API_KEY
+        EOF
+
   deploy:
     desc: |
       Deploy workloads onto the cluster - presumes that all dependencies have been isntalled already
+    deps:
+      - apply-secrets
     cmds:
       - helm upgrade --install aire-lab ./chart
