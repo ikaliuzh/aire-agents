@@ -10,6 +10,9 @@ tasks:
       - kind-create
     cmds:
       - task: install-argo
+      - task: install-gateway-api
+      - task: install-agentgateway
+
 
   down:
     desc: |
@@ -38,3 +41,17 @@ tasks:
       - kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml --context kind-aire-lab
     status:
       - kubectl get namespace argocd
+
+  install-gateway-api:
+    desc: |
+      Install k8s Gateway API through the Standard Channel
+    cmds: 
+      - kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.0/standard-install.yaml --context kind-aire-lab
+
+  install-agentgateway:
+    desc: |
+      Install agent gateway argo application
+    cmds: 
+      - kubectl apply -f manifests/agentgw/app-crds.yaml
+      - kubectl apply -f manifests/agentgw/app-chart.yaml
+
