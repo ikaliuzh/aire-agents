@@ -1,0 +1,15 @@
+# AgentGateway configuration
+agentgateway:
+  namespace: agentgateway-system
+
+  proxy:
+    name: agentgateway-proxy
+    className: agentgateway
+
+  backends:
+    gemini:
+      enabled: true
+      model: gemini-3-flash-preview
+      secretName: gemini-secret
+      route:
+        path: /gemini
