@@ -12,8 +12,8 @@ tasks:
       - kind-create
     cmds:
       - task: install-argo
-      - task: install-gateway-api
-      - task: install-agentgateway
+      - task: apply-secrets
+      - task: deploy-day-0
 
 
   down:
@@ -44,18 +44,12 @@ tasks:
     status:
       - kubectl get namespace argocd
 
-  install-gateway-api:
-    desc: |
-      Install k8s Gateway API through the Standard Channel
-    cmds: 
-      - kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.0/standard-install.yaml --context kind-aire-lab
 
-  install-agentgateway:
+  deploy-day-0:
     desc: |
-      Install agent gateway argo application
-    cmds: 
-      - kubectl apply -f infra/agentgateway/app-crds.yaml
-      - kubectl apply -f infra/agentgateway/app-chart.yaml
+      Deploy day-0 app-of-apps (agentgateway, kagent, aire-config)
+    cmds:
+      - kubectl apply -f infra/day-0/app.yaml --context kind-aire-lab
 
   apply-secrets:
     desc: |
@@ -72,12 +66,3 @@ tasks:
         stringData:
           Authorization: $GEMINI_API_KEY
         EOF
-
-
-  deploy:
-    desc: |
-      Deploy workloads onto the cluster - presumes that all dependencies have been isntalled already
-    deps:
-      - apply-secrets
-    cmds:
-      - helm upgrade --install aire-lab ./chart

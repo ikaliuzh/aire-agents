@@ -1,22 +1,18 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: aire-config
+  name: gateway-api
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "5"
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   destination:
-    namespace: agentgateway-system
     server: https://kubernetes.default.svc
   project: default
   source:
-    path: chart
-    repoURL: https://github.com/ikaliuzh/aire-agents.git
-    targetRevision: main
-    helm:
-      valueFiles:
-        - values.yaml
+    repoURL: https://github.com/kubernetes-sigs/gateway-api.git
+    targetRevision: v1.5.0
+    path: config/crd/standard
   syncPolicy:
     automated:
       prune: true

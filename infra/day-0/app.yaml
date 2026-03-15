@@ -3,15 +3,13 @@ kind: Application
 metadata:
   name: day-0
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
 spec:
   destination:
     namespace: argocd
     server: https://kubernetes.default.svc
   project: default
   source:
-    path: infra/day-0/apps
+    path: workloads
     repoURL: https://github.com/ikaliuzh/aire-agents.git
     targetRevision: main
   syncPolicy:
