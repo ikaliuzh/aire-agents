@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kagent
+  namespace: argocd
+spec:
+  destination:
+    namespace: kagent
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    chart: kagent
+    helm:
+      skipCrds: false
+      parameters:
+      # Default provider configuration
+      - name: providers.default
+        value: "gemini"
+      # Gemini provider - configured to use agentgateway without local credentials
+      - name: providers.gemini.enabled
+        value: "true"
+      - name: providers.gemini.baseURL
+        value: "http://agentgateway-proxy.agentgateway-system.svc.cluster.local/gemini"
+      - name: providers.gemini.apiKey
+        value: "dummy"  # agentgateway handles auth, but some providers require a non-empty key
+    repoURL: oci://ghcr.io/kagent-dev/kagent/helm
+    targetRevision: latest
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
