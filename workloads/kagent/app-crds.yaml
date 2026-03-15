@@ -15,7 +15,7 @@ spec:
     helm:
       skipCrds: false
     repoURL: oci://ghcr.io/kagent-dev/kagent/helm
-    targetRevision: latest
+    targetRevision: 0.7
   syncPolicy:
     automated:
       prune: true
