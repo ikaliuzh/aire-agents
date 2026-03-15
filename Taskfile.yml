@@ -66,12 +66,13 @@ tasks:
         apiVersion: v1
         kind: Secret
         metadata:
-          name: vertex-secret
+          name: gemini-secret
           namespace: agentgateway-system
         type: Opaque
         stringData:
-          Authorization: $VERTEX_AI_API_KEY
+          Authorization: $GEMINI_API_KEY
         EOF
+
 
   deploy:
     desc: |
