@@ -1,19 +1,22 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kagent-crds
+  name: aire-config
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
 spec:
   destination:
-    namespace: kagent
+    namespace: agentgateway-system
     server: https://kubernetes.default.svc
   project: default
   source:
-    chart: kagent-crds
+    path: chart
+    repoURL: https://github.com/ikaliuzh/aire-agents.git
+    targetRevision: main
     helm:
-      skipCrds: false
-    repoURL: oci://ghcr.io/kagent-dev/kagent/helm
-    targetRevision: latest
+      valueFiles:
+        - values.yaml
   syncPolicy:
     automated:
       prune: true
