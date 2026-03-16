@@ -130,25 +130,25 @@ graph LR
   - API key management via Kubernetes secrets
 
 #### 3. Kagent (Wave 3-4)
-- **Purpose**: AI-powered Kubernetes agent for infrastructure automation
+- **Purpose**: AI-powered Kubernetes agent framework for infrastructure automation
 - **Namespace**: `kagent`
 - **Version**: 0.7.23
 - **Features**:
-  - Kubernetes operations automation
-  - Integration with AgentGateway proxy
-  - Support for multiple specialized agents:
-    - k8s-agent (enabled by default)
-    - kgateway-agent, istio-agent, promql-agent (optional)
-    - argo-rollouts-agent, helm-agent (optional)
-    - cilium-policy-agent, cilium-manager-agent, cilium-debug-agent (optional)
+  - Kubernetes operations automation via AI agents
+  - MCP (Model Context Protocol) server integration
+  - Custom agent definitions via CRDs
+  - Built-in tool servers for Kubernetes operations
+  - Support for multiple specialized agents (k8s-agent, istio-agent, helm-agent, etc.)
 
 #### 4. AIRE Config (Wave 5)
-- **Purpose**: Custom Helm chart deploying AI backend configurations
-- **Namespace**: `agentgateway-system`
+- **Purpose**: Custom Helm chart deploying AI backend configurations and custom agents
+- **Namespaces**: `agentgateway-system`, `kagent`
 - **Configurations**:
   - Gateway resource definitions
-  - AgentgatewayBackend CRDs for AI providers
+  - AgentgatewayBackend CRDs for AI providers (Gemini)
   - HTTPRoute configurations for traffic routing
+  - ModelConfig for AIRE agents (auth-free, proxied through AgentGateway)
+  - Custom AIRE agent definition for infrastructure reliability engineering
 
 ### Data Flow
 
@@ -169,6 +169,83 @@ sequenceDiagram
     Gateway-->>Route: Response
     Route-->>User: HTTP Response
 ```
+
+### Authentication Architecture
+
+Authentication is **centralized in AgentGateway** - only the gateway holds the actual API keys for upstream providers. This design provides:
+
+- **Single Source of Truth**: API keys stored only in `agentgateway-system` namespace
+- **Security**: Agents don't need direct access to provider credentials
+- **Simplified Management**: Update API keys in one place
+- **Proxy Pattern**: Kagent agents route through AgentGateway which handles auth transparently
+
+```mermaid
+graph LR
+    Agent[AIRE Agent] -->|No API Key| GW[AgentGateway]
+    GW -->|With API Key| API[Gemini API]
+
+    Secret[gemini-secret<br/>agentgateway-system] -.->|Provides Auth| GW
+
+    style Agent fill:#F38181,stroke:#333,stroke-width:2px
+    style GW fill:#95E1D3,stroke:#333,stroke-width:2px
+    style Secret fill:#FFE66D,stroke:#333,stroke-width:2px
+    style API fill:#EA80FC,stroke:#fff,stroke-width:2px,color:#fff
+```
+
+The `aire-model-config` ModelConfig points to AgentGateway's proxy URL without any API key configuration:
+
+```yaml
+spec:
+  provider: OpenAI
+  model: gemini-3-flash-preview
+  openAI:
+    baseUrl: http://agentgateway-proxy.agentgateway-system.svc.cluster.local/gemini
+    # No apiKeySecret needed - AgentGateway handles auth
+```
+
+## Configuration
+
+### AI Backend Configuration
+
+Edit `chart/values.yaml` to configure AI backends:
+
+```yaml
+agentgateway:
+  backends:
+    gemini:
+      enabled: true
+      model: gemini-3-flash-preview
+      secretName: gemini-secret
+      route:
+        path: /gemini
+```
+
+### Custom Agents
+
+The AIRE Lab includes a custom `aire-agent` specialized in AI reliability engineering. The agent is defined in `chart/templates/agent.yaml` and focuses on:
+
+- LLM gateway operations and troubleshooting
+- AI workload monitoring
+- Infrastructure optimization for AI services
+
+To customize the agent, edit the agent definition and modify:
+- System message and capabilities
+- Resource allocations
+- Enabled tools and skills
+
+### API Keys
+
+API keys are managed centrally in AgentGateway:
+
+```bash
+# Update the Gemini API key in .env file
+GEMINI_API_KEY="your_new_key"
+
+# Reapply the secret
+task apply-secrets
+```
+
+The secret is only created in the `agentgateway-system` namespace. Kagent agents access the AI provider through the gateway proxy without needing direct API access.
 
 ## Usage
 

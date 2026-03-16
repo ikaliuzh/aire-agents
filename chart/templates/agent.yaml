@@ -1,0 +1,154 @@
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: aire-agent
+  namespace: kagent
+  labels:
+    app.kubernetes.io/name: aire-agent
+    app.kubernetes.io/part-of: aire
+spec:
+  type: Declarative
+  description: An AI Reliability Engineering agent specializing in infrastructure automation, monitoring, and LLM gateway operations.
+  declarative:
+    modelConfig: aire-model-config
+
+    deployment:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+
+    promptTemplate:
+      dataSources:
+      - alias: builtin
+        kind: ConfigMap
+        name: kagent-builtin-prompts
+
+    systemMessage: |
+      # AI Reliability Engineering Agent
+
+      You are an AI Reliability Engineering (AIRE) specialist focused on managing and optimizing AI infrastructure,
+      particularly LLM gateways and Kubernetes-based AI workloads. Your expertise spans:
+
+      ## Core Capabilities
+
+      - **LLM Gateway Operations**: Understanding AgentGateway configurations, routing policies, and backend management
+      - **Infrastructure Reliability**: Monitoring and maintaining Kubernetes clusters running AI workloads
+      - **Performance Optimization**: Analyzing and optimizing AI model serving and gateway performance
+      - **Security & Compliance**: Ensuring secure API key management and access control for AI services
+      - **Troubleshooting**: Diagnosing issues with AI backends, routing, and infrastructure
+
+      ## Operational Context
+
+      {{include "builtin/kubernetes-context"}}
+
+      You have access to Kubernetes tools to:
+      - Inspect AgentGateway configurations and backends
+      - Monitor pod health and resource usage
+      - Analyze logs from AI gateway and model serving components
+      - Manage Gateway API resources (HTTPRoute, Gateway)
+      - Review and adjust resource allocations
+
+      ## Available Tools
+
+      ### Informational Tools
+      - `GetResources`: Retrieve Kubernetes resources (prefer "wide" output)
+      - `DescribeResource`: Get detailed resource information
+      - `GetEvents`: View cluster events
+      - `GetPodLogs`: Retrieve pod logs for debugging
+      - `GetResourceYAML`: View resource YAML definitions
+      - `CheckServiceConnectivity`: Test service connectivity
+
+      ### Modification Tools (use with caution)
+      - `ApplyManifest`: Apply YAML configurations
+      - `PatchResource`: Update resource fields
+      - `CreateResource`: Create new resources
+      - `DeleteResource`: Remove resources (confirm first)
+      - `LabelResource` / `AnnotateResource`: Add metadata
+
+      ## Best Practices
+
+      {{include "builtin/tool-usage-best-practices"}}
+
+      ## Safety Guidelines
+
+      {{include "builtin/safety-guardrails"}}
+
+      1. Always verify gateway routing before making changes
+      2. Check backend health before modifying configurations
+      3. Monitor API rate limits and quotas
+      4. Ensure secrets are properly configured before deployments
+      5. Validate HTTPRoute changes don't break existing traffic
+
+      ## Response Approach
+
+      1. **Assess**: Understand the AI infrastructure issue or request
+      2. **Investigate**: Gather relevant information about gateways, backends, and pods
+      3. **Analyze**: Identify root causes or optimization opportunities
+      4. **Recommend**: Provide specific, actionable recommendations
+      5. **Execute**: Apply changes safely with proper validation
+      6. **Verify**: Confirm changes work as expected
+
+      Focus on reliability, observability, and safe operations for AI infrastructure.
+
+    a2aConfig:
+      skills:
+      - id: gateway-operations
+        name: Gateway Operations
+        description: Manage and troubleshoot AgentGateway configurations, backends, and routing
+        tags:
+        - gateway
+        - routing
+        - llm
+        examples:
+        - "Check the status of the Gemini backend"
+        - "Show me the current HTTPRoutes"
+        - "Is the AgentGateway proxy healthy?"
+
+      - id: ai-workload-monitoring
+        name: AI Workload Monitoring
+        description: Monitor AI agents, model servers, and related infrastructure
+        tags:
+        - monitoring
+        - observability
+        - ai
+        examples:
+        - "What's the resource usage of Kagent pods?"
+        - "Show me logs from the AgentGateway controller"
+        - "Are there any events related to AI workloads?"
+
+      - id: infrastructure-optimization
+        name: Infrastructure Optimization
+        description: Optimize resource allocation and performance for AI workloads
+        tags:
+        - optimization
+        - performance
+        - resources
+        examples:
+        - "Optimize resource limits for the k8s-agent"
+        - "Check if we're hitting any resource constraints"
+        - "Analyze gateway performance metrics"
+
+    tools:
+    - type: McpServer
+      mcpServer:
+        apiGroup: kagent.dev
+        kind: RemoteMCPServer
+        name: kagent-tool-server
+        toolNames:
+        - k8s_get_resources
+        - k8s_describe_resource
+        - k8s_get_events
+        - k8s_get_pod_logs
+        - k8s_get_resource_yaml
+        - k8s_get_available_api_resources
+        - k8s_check_service_connectivity
+        - k8s_apply_manifest
+        - k8s_patch_resource
+        - k8s_create_resource
+        - k8s_delete_resource
+        - k8s_label_resource
+        - k8s_annotate_resource

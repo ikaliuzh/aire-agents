@@ -61,6 +61,7 @@ tasks:
   apply-secrets:
     desc: |
       Apply secrets necessary for proper application functioning
+      Auth is centralized in AgentGateway - Kagent proxies through it
     cmds:
       - |
         kubectl apply -f- <<EOF
@@ -72,15 +73,4 @@ tasks:
         type: Opaque
         stringData:
           Authorization: $GEMINI_API_KEY
-        EOF
-      - |
-        kubectl apply -f- <<EOF
-        apiVersion: v1
-        kind: Secret
-        metadata:
-          name: gemini-secret
-          namespace: kagent
-        type: Opaque
-        stringData:
-          apiKey: $GEMINI_API_KEY
         EOF
