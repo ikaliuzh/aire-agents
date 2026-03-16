@@ -13,17 +13,38 @@ spec:
   source:
     path: .
     helm:
-      parameters:
-      # Default provider configuration
-      - name: providers.default
-        value: "gemini"
-      # Gemini provider - configured to use agentgateway without local credentials
-      - name: providers.gemini.enabled
-        value: "true"
-      - name: providers.gemini.baseURL
-        value: "http://agentgateway-proxy.agentgateway-system.svc.cluster.local/gemini"
-      - name: providers.gemini.apiKey
-        value: "dummy"  # agentgateway handles auth, but some providers require a non-empty key
+      valuesObject:
+        # Default provider configuration
+        providers:
+          default: gemini
+          # Gemini provider - configured to use agentgateway without local credentials
+          gemini:
+            enabled: true
+            baseURL: http://agentgateway-proxy.agentgateway-system.svc.cluster.local/gemini
+            apiKey: dummy  # agentgateway handles auth, but some providers require a non-empty key
+
+        # Disable all agents
+        agents:
+          k8s-agent:
+            enabled: true
+          kgateway-agent:
+            enabled: false
+          istio-agent:
+            enabled: false
+          promql-agent:
+            enabled: false
+          observability-agent:
+            enabled: false
+          argo-rollouts-agent:
+            enabled: false
+          helm-agent:
+            enabled: false
+          cilium-policy-agent:
+            enabled: false
+          cilium-manager-agent:
+            enabled: false
+          cilium-debug-agent:
+            enabled: false
     repoURL: oci://ghcr.io/kagent-dev/kagent/helm/kagent
     targetRevision: "0.7.0"
   syncPolicy:
