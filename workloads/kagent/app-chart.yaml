@@ -16,12 +16,10 @@ spec:
       valuesObject:
         # Default provider configuration
         providers:
-          default: gemini
-          # Gemini provider - configured to use agentgateway without local credentials
-          gemini:
-            enabled: true
-            baseURL: http://agentgateway-proxy.agentgateway-system.svc.cluster.local/gemini
-            apiKey: dummy  # agentgateway handles auth, but some providers require a non-empty key
+          openAI:
+            apiKeySecretRef: gemini-secret
+            apiKeySecretKey: apiKey
+            baseURL: "http://agentgateway-proxy.agentgateway-system.svc.cluster.local:80"
 
         kmcp:
           enabled: false
