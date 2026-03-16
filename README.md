@@ -83,7 +83,7 @@ graph LR
         GW[Gateway<br/>agentgateway-proxy]
         HR[HTTPRoute<br/>/gemini]
         BE[AgentgatewayBackend<br/>gemini]
-        SEC1[Secret<br/>gemini-secret]
+        SEC1[Secret<br/>gemini-secret<br/>real API key]
 
         HR --> GW
         HR --> BE
@@ -91,11 +91,13 @@ graph LR
     end
 
     subgraph "kagent namespace"
-        KA[Kagent<br/>k8s-agent]
-        SEC2[Secret<br/>gemini-secret]
+        AGENT[Agent<br/>aire-agent]
+        MC[ModelConfig<br/>aire-model-config]
+        SEC2[Secret<br/>dummy-api-key<br/>placeholder]
 
-        KA --> SEC2
-        KA -.uses.-> GW
+        AGENT --> MC
+        MC --> SEC2
+        MC -.routes via.-> GW
     end
 
     subgraph "External"
@@ -107,9 +109,10 @@ graph LR
     style GW fill:#95E1D3,stroke:#333,stroke-width:2px
     style BE fill:#95E1D3,stroke:#333,stroke-width:2px
     style HR fill:#4ECDC4,stroke:#333,stroke-width:2px
-    style KA fill:#F38181,stroke:#333,stroke-width:2px
+    style AGENT fill:#F38181,stroke:#333,stroke-width:2px
+    style MC fill:#FFB6C1,stroke:#333,stroke-width:2px
     style SEC1 fill:#FFE66D,stroke:#333,stroke-width:2px
-    style SEC2 fill:#FFE66D,stroke:#333,stroke-width:2px
+    style SEC2 fill:#E8E8E8,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
     style GAPI fill:#EA80FC,stroke:#fff,stroke-width:2px,color:#fff
 ```
 
@@ -172,80 +175,25 @@ sequenceDiagram
 
 ### Authentication Architecture
 
-Authentication is **centralized in AgentGateway** - only the gateway holds the actual API keys for upstream providers. This design provides:
-
-- **Single Source of Truth**: API keys stored only in `agentgateway-system` namespace
-- **Security**: Agents don't need direct access to provider credentials
-- **Simplified Management**: Update API keys in one place
-- **Proxy Pattern**: Kagent agents route through AgentGateway which handles auth transparently
-
-```mermaid
-graph LR
-    Agent[AIRE Agent] -->|No API Key| GW[AgentGateway]
-    GW -->|With API Key| API[Gemini API]
-
-    Secret[gemini-secret<br/>agentgateway-system] -.->|Provides Auth| GW
-
-    style Agent fill:#F38181,stroke:#333,stroke-width:2px
-    style GW fill:#95E1D3,stroke:#333,stroke-width:2px
-    style Secret fill:#FFE66D,stroke:#333,stroke-width:2px
-    style API fill:#EA80FC,stroke:#fff,stroke-width:2px,color:#fff
-```
-
-The `aire-model-config` ModelConfig points to AgentGateway's proxy URL without any API key configuration:
+AgentGateway centralizes authentication to upstream AI providers. AIRE agents use a dummy API key (required by the OpenAI SDK) and route all requests through AgentGateway, which handles actual authentication:
 
 ```yaml
+# ModelConfig uses placeholder credentials
 spec:
   provider: OpenAI
   model: gemini-3-flash-preview
+  apiKeySecret: dummy-api-key  # Placeholder for SDK compatibility
   openAI:
-    baseUrl: http://agentgateway-proxy.agentgateway-system.svc.cluster.local/gemini
-    # No apiKeySecret needed - AgentGateway handles auth
+    baseUrl: http://agentgateway-proxy.agentgateway-system/gemini
+
+# AgentGateway holds real credentials
+spec:
+  policies:
+    auth:
+      secretRef:
+        name: gemini-secret  # Real API key here
 ```
 
-## Configuration
-
-### AI Backend Configuration
-
-Edit `chart/values.yaml` to configure AI backends:
-
-```yaml
-agentgateway:
-  backends:
-    gemini:
-      enabled: true
-      model: gemini-3-flash-preview
-      secretName: gemini-secret
-      route:
-        path: /gemini
-```
-
-### Custom Agents
-
-The AIRE Lab includes a custom `aire-agent` specialized in AI reliability engineering. The agent is defined in `chart/templates/agent.yaml` and focuses on:
-
-- LLM gateway operations and troubleshooting
-- AI workload monitoring
-- Infrastructure optimization for AI services
-
-To customize the agent, edit the agent definition and modify:
-- System message and capabilities
-- Resource allocations
-- Enabled tools and skills
-
-### API Keys
-
-API keys are managed centrally in AgentGateway:
-
-```bash
-# Update the Gemini API key in .env file
-GEMINI_API_KEY="your_new_key"
-
-# Reapply the secret
-task apply-secrets
-```
-
-The secret is only created in the `agentgateway-system` namespace. Kagent agents access the AI provider through the gateway proxy without needing direct API access.
 
 ## Usage
 
