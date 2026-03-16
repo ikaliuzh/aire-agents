@@ -21,7 +21,9 @@ metadata:
   namespace: {{ .Values.agentgateway.namespace }}
 spec:
   parentRefs:
-    - name: {{ .Values.agentgateway.proxy.name }}
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: {{ .Values.agentgateway.proxy.name }}
       namespace: {{ .Values.agentgateway.namespace }}
   rules:
   - matches:
@@ -33,4 +35,5 @@ spec:
       namespace: {{ .Values.agentgateway.namespace }}
       group: agentgateway.dev
       kind: AgentgatewayBackend
+      weight: 1
 {{- end }}
