@@ -17,6 +17,7 @@ spec:
         # Default provider configuration
         providers:
           openAI:
+            model: gemini-3-flash-preview
             apiKeySecretRef: gemini-secret
             apiKeySecretKey: apiKey
             baseURL: "http://agentgateway-proxy.agentgateway-system.svc.cluster.local:80"
