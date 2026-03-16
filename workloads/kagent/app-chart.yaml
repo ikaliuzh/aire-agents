@@ -26,6 +26,7 @@ spec:
         value: "dummy"  # agentgateway handles auth, but some providers require a non-empty key
     repoURL: oci://ghcr.io/kagent-dev/kagent/helm
     targetRevision: "0.7.0"
+    enableOCI: true
   syncPolicy:
     automated:
       prune: true
