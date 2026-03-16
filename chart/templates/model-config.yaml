@@ -6,7 +6,17 @@ metadata:
 spec:
   model: {{ .Values.agentgateway.backends.gemini.model }}
   provider: OpenAI
+  apiKeySecret: dummy-api-key
+  apiKeySecretKey: api-key
   openAI:
-    # AgentGateway handles authentication - use placeholder API key
-    apiKey: dummy-api-key
     baseUrl: http://{{ .Values.agentgateway.proxy.name }}.{{ .Values.agentgateway.namespace }}.svc.cluster.local{{ .Values.agentgateway.backends.gemini.route.path }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dummy-api-key
+  namespace: kagent
+type: Opaque
+stringData:
+  api-key: "sk-agentgateway-placeholder"
+---
