@@ -46,7 +46,7 @@ spec:
           cilium-debug-agent:
             enabled: false
     repoURL: oci://ghcr.io/kagent-dev/kagent/helm/kagent
-    targetRevision: "0.7.0"
+    targetRevision: "0.7.23"
   syncPolicy:
     automated:
       prune: true

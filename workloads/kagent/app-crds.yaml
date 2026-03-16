@@ -13,7 +13,7 @@ spec:
   source:
     path: .
     repoURL: oci://ghcr.io/kagent-dev/kagent/helm/kagent-crds
-    targetRevision: "0.7.0"
+    targetRevision: "0.7.23"
   syncPolicy:
     automated:
       prune: true
