@@ -11,6 +11,10 @@ spec:
   openAI:
     baseUrl: http://{{ .Values.agentgateway.proxy.name }}.{{ .Values.agentgateway.namespace }}.svc.cluster.local{{ .Values.agentgateway.backends.gemini.route.path }}
 ---
+# Authentication is handled by agentgateway, but some providers require a non-empty key,
+# so we create a dummy secret here. In a real deployment, you would replace this with actual
+# credentials or use Kubernetes secrets management to inject the necessary keys without
+# hardcoding them in the configuration.
 apiVersion: v1
 kind: Secret
 metadata:
