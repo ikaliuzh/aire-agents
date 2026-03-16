@@ -7,5 +7,6 @@ spec:
   model: {{ .Values.agentgateway.backends.gemini.model }}
   provider: OpenAI
   openAI:
-    # AgentGateway handles authentication - no API key needed here
+    # AgentGateway handles authentication - use placeholder API key
+    apiKey: dummy-api-key
     baseUrl: http://{{ .Values.agentgateway.proxy.name }}.{{ .Values.agentgateway.namespace }}.svc.cluster.local{{ .Values.agentgateway.backends.gemini.route.path }}
