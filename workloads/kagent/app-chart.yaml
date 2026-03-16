@@ -13,7 +13,6 @@ spec:
   source:
     chart: kagent
     helm:
-      skipCrds: false
       parameters:
       # Default provider configuration
       - name: providers.default

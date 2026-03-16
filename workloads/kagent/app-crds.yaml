@@ -12,8 +12,6 @@ spec:
   project: default
   source:
     chart: kagent-crds
-    helm:
-      skipCrds: false
     repoURL: oci://ghcr.io/kagent-dev/kagent/helm
     targetRevision: "0.7.0"
   syncPolicy:
