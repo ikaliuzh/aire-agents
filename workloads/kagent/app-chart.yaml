@@ -23,7 +23,13 @@ spec:
             baseURL: http://agentgateway-proxy.agentgateway-system.svc.cluster.local/gemini
             apiKey: dummy  # agentgateway handles auth, but some providers require a non-empty key
 
-        # Disable all agents
+        kmcp:
+          enabled: false
+        tools:
+          grafana-mcp:
+            enabled: false
+          querydoc:
+            enabled: false
         agents:
           k8s-agent:
             enabled: true
