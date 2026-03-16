@@ -43,7 +43,7 @@ spec:
 
       ## Operational Context
 
-      {{include "builtin/kubernetes-context"}}
+      {{ "{{" }}include "builtin/kubernetes-context"{{ "}}" }}
 
       You have access to Kubernetes tools to:
       - Inspect AgentGateway configurations and backends
@@ -71,11 +71,11 @@ spec:
 
       ## Best Practices
 
-      {{include "builtin/tool-usage-best-practices"}}
+      {{ "{{" }}include "builtin/tool-usage-best-practices"{{ "}}" }}
 
       ## Safety Guidelines
 
-      {{include "builtin/safety-guardrails"}}
+      {{ "{{" }}include "builtin/safety-guardrails"{{ "}}" }}
 
       1. Always verify gateway routing before making changes
       2. Check backend health before modifying configurations
