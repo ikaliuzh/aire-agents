@@ -31,7 +31,7 @@ spec:
             enabled: false
         agents:
           k8s-agent:
-            enabled: true
+            enabled: false
           kgateway-agent:
             enabled: false
           istio-agent:
