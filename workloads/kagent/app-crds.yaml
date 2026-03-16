@@ -11,10 +11,9 @@ spec:
     server: https://kubernetes.default.svc
   project: default
   source:
-    chart: kagent-crds
-    repoURL: oci://ghcr.io/kagent-dev/kagent/helm
+    path: .
+    repoURL: oci://ghcr.io/kagent-dev/kagent/helm/kagent-crds
     targetRevision: "0.7.0"
-    enableOCI: true
   syncPolicy:
     automated:
       prune: true
