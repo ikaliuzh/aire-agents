@@ -13,3 +13,87 @@ agentgateway:
       secretName: gemini-secret
       route:
         path: /gemini
+
+# PostgreSQL configuration
+postgres:
+  enabled: true
+  namespace: kagent
+  cluster:
+    name: aire-postgres
+    instances: 1
+    storage:
+      size: 1Gi
+  database:
+    name: airedb
+    owner: aire
+
+  # Sample data initialization
+  initdb:
+    database: airedb
+    owner: aire
+    postInitApplicationSQL:
+    - |
+      CREATE TABLE IF NOT EXISTS application_events (
+        id SERIAL PRIMARY KEY,
+        event_type VARCHAR(50) NOT NULL,
+        component VARCHAR(100) NOT NULL,
+        message TEXT NOT NULL,
+        severity VARCHAR(20) NOT NULL,
+        metadata JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX idx_events_created_at ON application_events(created_at);
+      CREATE INDEX idx_events_component ON application_events(component);
+      CREATE INDEX idx_events_severity ON application_events(severity);
+
+      INSERT INTO application_events (event_type, component, message, severity, metadata) VALUES
+      ('startup', 'api-gateway', 'Service started successfully', 'info', '{"version": "1.0.0", "port": 8080}'),
+      ('error', 'database', 'Connection timeout', 'error', '{"timeout_ms": 5000, "retry_count": 3}'),
+      ('deployment', 'frontend', 'New version deployed', 'info', '{"version": "2.1.0", "replicas": 3}'),
+      ('alert', 'monitoring', 'High memory usage detected', 'warning', '{"usage_percent": 85, "threshold": 80}'),
+      ('audit', 'auth-service', 'User login successful', 'info', '{"user_id": "user-123", "ip": "10.0.1.5"}');
+
+# PostgreSQL MCP Server
+mcpServers:
+  postgres:
+    enabled: true
+    name: postgres-mcp-server
+    namespace: kagent
+    image:
+      repository: crystaldba/postgres-mcp
+      tag: latest
+      pullPolicy: IfNotPresent
+    connection:
+      host: aire-postgres-rw
+      port: 5432
+      database: airedb
+      userSecret: aire-postgres-app
+      userSecretKey: username
+      passwordSecret: aire-postgres-app
+      passwordSecretKey: password
+    accessMode: unrestricted  # Options: unrestricted (dev) or restricted (read-only)
+    replicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
+# Agents configuration
+agents:
+  dba:
+    enabled: true
+    name: dba-agent
+    namespace: kagent
+    description: AI Database Administrator specializing in PostgreSQL operations and analysis
+    modelConfig: aire-model-config
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi

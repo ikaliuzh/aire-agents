@@ -49,8 +49,9 @@ tasks:
     desc: |
       Create namespaces required for workloads
     cmds:
-      - kubectl create namespace agentgateway-system --context kind-aire-lab
-      - kubectl create namespace kagent --context kind-aire-lab
+      - kubectl create namespace agentgateway-system --context kind-aire-lab --dry-run=client -o yaml | kubectl apply -f - --context kind-aire-lab
+      - kubectl create namespace kagent --context kind-aire-lab --dry-run=client -o yaml | kubectl apply -f - --context kind-aire-lab
+      - kubectl create namespace cnpg-system --context kind-aire-lab --dry-run=client -o yaml | kubectl apply -f - --context kind-aire-lab
 
   deploy-day-0:
     desc: |

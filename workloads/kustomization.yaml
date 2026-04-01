@@ -5,6 +5,9 @@ resources:
   # Gateway API CRDs - Wave 0
   - gateway-api/app.yaml
 
+  # PostgreSQL Operator - Wave 1
+  - postgres-operator/app.yaml
+
   # AgentGateway - Wave 1 & 2
   - agentgateway/app-crds.yaml
   - agentgateway/app-chart.yaml

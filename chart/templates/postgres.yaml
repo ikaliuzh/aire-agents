@@ -1,0 +1,49 @@
+{{- if .Values.postgres.enabled }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .Values.postgres.cluster.name }}
+  namespace: {{ .Values.postgres.namespace }}
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: aire
+spec:
+  instances: {{ .Values.postgres.cluster.instances }}
+
+  storage:
+    size: {{ .Values.postgres.cluster.storage.size }}
+
+  bootstrap:
+    initdb:
+      database: {{ .Values.postgres.database.name }}
+      owner: {{ .Values.postgres.database.owner }}
+      postInitApplicationSQL:
+        # Enable extensions for enhanced MCP server capabilities
+        - CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+        - CREATE EXTENSION IF NOT EXISTS hypopg;
+      {{- if .Values.postgres.initdb.postInitApplicationSQL }}
+      {{- range .Values.postgres.initdb.postInitApplicationSQL }}
+        - {{ . | quote }}
+      {{- end }}
+      {{- end }}
+
+  # Enable superuser access
+  enableSuperuserAccess: true
+
+  postgresql:
+    parameters:
+      max_connections: "100"
+      shared_buffers: "256MB"
+      log_statement: "all"
+      log_min_duration_statement: "100"
+      shared_preload_libraries: "pg_stat_statements"
+      pg_stat_statements.track: "all"
+
+    # Enable extensions for enhanced MCP capabilities
+    shared_preload_libraries:
+      - pg_stat_statements
+
+  # Monitoring
+  monitoring:
+    enablePodMonitor: false
+{{- end }}

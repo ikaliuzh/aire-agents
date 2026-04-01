@@ -1,0 +1,142 @@
+{{- if .Values.mcpServers.postgres.enabled }}
+apiVersion: kagent.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: {{ .Values.mcpServers.postgres.name }}
+  namespace: {{ .Values.mcpServers.postgres.namespace }}
+  labels:
+    app.kubernetes.io/name: postgres-mcp-server
+    app.kubernetes.io/part-of: aire
+spec:
+  transportType: http
+  timeout: "30s"
+
+  deployment:
+    image: {{ .Values.mcpServers.postgres.image.repository }}:{{ .Values.mcpServers.postgres.image.tag }}
+    imagePullPolicy: {{ .Values.mcpServers.postgres.image.pullPolicy }}
+
+    command:
+    - postgres-mcp
+    args:
+    - --access-mode={{ .Values.mcpServers.postgres.accessMode }}
+
+    env:
+    - name: DATABASE_URI
+      value: postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@{{ .Values.mcpServers.postgres.connection.host }}:{{ .Values.mcpServers.postgres.connection.port }}/{{ .Values.mcpServers.postgres.connection.database }}
+    - name: POSTGRES_USER
+      valueFrom:
+        secretKeyRef:
+          name: {{ .Values.mcpServers.postgres.connection.userSecret }}
+          key: {{ .Values.mcpServers.postgres.connection.userSecretKey }}
+    - name: POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: {{ .Values.mcpServers.postgres.connection.passwordSecret }}
+          key: {{ .Values.mcpServers.postgres.connection.passwordSecretKey }}
+
+    resources:
+      {{- toYaml .Values.mcpServers.postgres.resources | nindent 6 }}
+
+  httpTransport:
+    port: 8080
+    path: /
+
+  # Tool definitions for the PostgreSQL MCP server
+  tools:
+  - name: postgres_query
+    description: Execute a SQL query on the PostgreSQL database and return results
+    inputSchema:
+      type: object
+      properties:
+        query:
+          type: string
+          description: The SQL query to execute
+      required:
+      - query
+
+  - name: postgres_list_databases
+    description: List all databases in the PostgreSQL cluster
+    inputSchema:
+      type: object
+      properties: {}
+
+  - name: postgres_list_tables
+    description: List all tables in a specific database
+    inputSchema:
+      type: object
+      properties:
+        database:
+          type: string
+          description: The database name (optional, defaults to current database)
+
+  - name: postgres_describe_table
+    description: Get the schema/structure of a specific table
+    inputSchema:
+      type: object
+      properties:
+        table_name:
+          type: string
+          description: The name of the table to describe
+      required:
+      - table_name
+
+  - name: postgres_create_database
+    description: Create a new database
+    inputSchema:
+      type: object
+      properties:
+        database_name:
+          type: string
+          description: The name of the database to create
+        owner:
+          type: string
+          description: The owner of the database (optional)
+      required:
+      - database_name
+
+  - name: postgres_table_stats
+    description: Get statistics about a table (row count, size, indexes)
+    inputSchema:
+      type: object
+      properties:
+        table_name:
+          type: string
+          description: The name of the table
+      required:
+      - table_name
+
+  - name: postgres_explain_query
+    description: Get the execution plan for a query using EXPLAIN
+    inputSchema:
+      type: object
+      properties:
+        query:
+          type: string
+          description: The SQL query to explain
+        analyze:
+          type: boolean
+          description: Run EXPLAIN ANALYZE (actually executes the query)
+          default: false
+      required:
+      - query
+
+  - name: postgres_list_indexes
+    description: List all indexes in a specific table
+    inputSchema:
+      type: object
+      properties:
+        table_name:
+          type: string
+          description: The name of the table
+      required:
+      - table_name
+
+  - name: postgres_vacuum_analyze
+    description: Run VACUUM ANALYZE on a table to update statistics
+    inputSchema:
+      type: object
+      properties:
+        table_name:
+          type: string
+          description: The name of the table (leave empty for all tables)
+{{- end }}

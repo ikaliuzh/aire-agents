@@ -23,7 +23,7 @@ spec:
             baseURL: "http://agentgateway-proxy.agentgateway-system.svc.cluster.local:80"
 
         kmcp:
-          enabled: false
+          enabled: true
         tools:
           grafana-mcp:
             enabled: false
