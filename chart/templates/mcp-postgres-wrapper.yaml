@@ -1,0 +1,24 @@
+{{- if .Values.mcpServers.postgres.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.mcpServers.postgres.name }}-wrapper
+  namespace: {{ .Values.mcpServers.postgres.namespace }}
+  labels:
+    app.kubernetes.io/name: postgres-mcp-server
+    app.kubernetes.io/part-of: aire
+data:
+  entrypoint.sh: |
+    #!/bin/sh
+    set -e
+
+    # Read credentials from mounted secret
+    USERNAME=$(cat /secrets/postgres/username)
+    PASSWORD=$(cat /secrets/postgres/password)
+
+    # Construct and export DATABASE_URI
+    export DATABASE_URI="postgresql://${USERNAME}:${PASSWORD}@{{ .Values.mcpServers.postgres.connection.host }}:{{ .Values.mcpServers.postgres.connection.port }}/{{ .Values.mcpServers.postgres.connection.database }}"
+
+    # Execute the MCP server with any provided arguments
+    exec postgres-mcp "$@"
+{{- end }}
