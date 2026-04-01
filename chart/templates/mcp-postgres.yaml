@@ -17,7 +17,7 @@ spec:
     port: 8080
 
     # Use shell wrapper to construct DATABASE_URI from mounted secrets
-    cmd: ["/bin/sh", "/wrapper/entrypoint.sh"]
+    cmd: "/wrapper/entrypoint.sh"
     args:
     - --access-mode={{ .Values.mcpServers.postgres.accessMode }}
 
