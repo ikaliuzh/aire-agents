@@ -37,6 +37,8 @@ This command will:
 - Create required namespaces
 - Apply API secrets
 - Deploy the app-of-apps pattern for automatic workload deployment
+- Install CloudNativePG operator (via ArgoCD)
+- Deploy PostgreSQL cluster with MCP server integration
 
 ### Verify Installation
 
@@ -92,10 +94,19 @@ graph LR
 
     subgraph "kagent namespace"
         AGENT[Agent<br/>aire-agent]
+        DBA[Agent<br/>dba-agent]
         MC[ModelConfig<br/>aire-model-config]
         SEC2[Secret<br/>dummy-api-key<br/>placeholder]
+        
+        MCP[MCPServer<br/>postgres-mcp-server]
+        PG[PostgreSQL Cluster<br/>aire-postgres]
+        SEC3[Secret<br/>aire-postgres-app<br/>DB credentials]
 
         AGENT --> MC
+        DBA --> MC
+        DBA --> MCP
+        MCP --> PG
+        MCP --> SEC3
         MC --> SEC2
         MC -.routes via.-> GW
     end
@@ -110,9 +121,13 @@ graph LR
     style BE fill:#95E1D3,stroke:#333,stroke-width:2px
     style HR fill:#4ECDC4,stroke:#333,stroke-width:2px
     style AGENT fill:#F38181,stroke:#333,stroke-width:2px
+    style DBA fill:#F38181,stroke:#333,stroke-width:2px
     style MC fill:#FFB6C1,stroke:#333,stroke-width:2px
+    style MCP fill:#A8DADC,stroke:#333,stroke-width:2px
+    style PG fill:#457B9D,stroke:#fff,stroke-width:2px,color:#fff
     style SEC1 fill:#FFE66D,stroke:#333,stroke-width:2px
     style SEC2 fill:#E8E8E8,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
+    style SEC3 fill:#FFE66D,stroke:#333,stroke-width:2px
     style GAPI fill:#EA80FC,stroke:#fff,stroke-width:2px,color:#fff
 ```
 
@@ -144,17 +159,20 @@ graph LR
   - Support for multiple specialized agents (k8s-agent, istio-agent, helm-agent, etc.)
 
 #### 4. AIRE Config (Wave 5)
-- **Purpose**: Custom Helm chart deploying AI backend configurations and custom agents
+- **Purpose**: Custom Helm chart deploying AI backend configurations, databases, and custom agents
 - **Namespaces**: `agentgateway-system`, `kagent`
 - **Configurations**:
   - Gateway resource definitions
   - AgentgatewayBackend CRDs for AI providers (Gemini)
   - HTTPRoute configurations for traffic routing
   - ModelConfig for AIRE agents (auth-free, proxied through AgentGateway)
-  - Custom AIRE agent definition for infrastructure reliability engineering
+  - PostgreSQL cluster with CloudNativePG operator
+  - MCP servers (Model Context Protocol) for specialized integrations
+  - Custom AI agents (DBA, infrastructure reliability engineering)
 
 ### Data Flow
 
+#### AI Request Flow (via AgentGateway)
 ```mermaid
 sequenceDiagram
     participant User as User/Agent
@@ -171,6 +189,30 @@ sequenceDiagram
     Backend-->>Gateway: Response
     Gateway-->>Route: Response
     Route-->>User: HTTP Response
+```
+
+#### DBA Agent Database Operations Flow
+```mermaid
+sequenceDiagram
+    participant User as User
+    participant UI as Kagent UI
+    participant Agent as DBA Agent
+    participant MCP as Postgres MCP Server
+    participant PG as PostgreSQL Cluster
+    participant LLM as Gemini API<br/>(via AgentGateway)
+
+    User->>UI: "Show me all error events"
+    UI->>Agent: User Query
+    Agent->>LLM: Analyze Request & Plan
+    LLM-->>Agent: Use postgres_query tool
+    Agent->>MCP: Execute Tool: postgres_query
+    MCP->>PG: SQL Query
+    PG-->>MCP: Query Results
+    MCP-->>Agent: Tool Response
+    Agent->>LLM: Format Results
+    LLM-->>Agent: Natural Language Response
+    Agent-->>UI: Formatted Response
+    UI-->>User: Display Results
 ```
 
 ### Authentication Architecture
@@ -195,7 +237,151 @@ spec:
 ```
 
 
+## MCP Servers & AI Agents
+
+### PostgreSQL Database with DBA Agent
+
+For testing and demonstration purposes, the AIRE Lab includes a PostgreSQL database cluster managed by the CloudNativePG operator, integrated with the **CrystalDBA Postgres MCP Server** for advanced database operations.
+
+#### PostgreSQL Cluster
+- **Namespace**: `kagent`
+- **Cluster Name**: `aire-postgres`
+- **Database**: `airedb`
+- **Operator**: CloudNativePG (CNPG)
+- **Features**:
+  - High-availability PostgreSQL 17
+  - Automated backups and replication
+  - Extensions: `pg_stat_statements` for query analytics
+  - Sample `application_events` table with test data
+
+#### CrystalDBA Postgres MCP Server
+- **Image**: `crystaldba/postgres-mcp:latest`
+- **Repository**: [github.com/crystaldba/postgres-mcp](https://github.com/crystaldba/postgres-mcp)
+- **Capabilities**:
+  - **Database Health Analysis**: Index integrity, connection utilization, buffer cache performance, vacuum status
+  - **AI-Powered Index Tuning**: Industrial algorithms for optimal indexing strategies
+  - **Query Optimization**: EXPLAIN plans and query execution analysis
+  - **Schema Intelligence**: Contextual SQL generation based on database understanding
+  - **Safe Execution**: Configurable access modes (unrestricted/restricted)
+
+#### DBA Agent
+The AI Database Administrator agent specializes in PostgreSQL operations and provides:
+
+- **Query Operations**: Execute SQL queries, inspect schemas, manage databases
+- **Performance Analysis**: Query optimization, execution plan analysis, index recommendations
+- **Health Monitoring**: Database health checks, connection pool monitoring
+- **Schema Management**: Table inspection, index analysis, schema modifications
+- **Data Analysis**: Analytical queries and insights generation
+- **Maintenance**: VACUUM, ANALYZE, and other maintenance operations
+
+**Available Tools**:
+- `postgres_query` - Execute SQL queries
+- `postgres_explain_query` - Get query execution plans
+- `postgres_list_databases` - List all databases
+- `postgres_list_tables` - List tables in a database
+- `postgres_describe_table` - View table schema
+- `postgres_table_stats` - Get table statistics
+- `postgres_list_indexes` - List indexes on a table
+- `postgres_create_database` - Create new databases
+- `postgres_vacuum_analyze` - Update statistics and reclaim space
+- Plus Kubernetes tools for cluster inspection
+
+**Example Interactions**:
+```bash
+# Via Kagent UI (port 8082)
+"Show me the schema of the application_events table"
+"Find all error events from the last 24 hours"
+"This query is slow, can you optimize it?"
+"What are the most common event types?"
+```
+
+### MCP Server Architecture
+
+MCP (Model Context Protocol) servers provide specialized capabilities to AI agents. The AIRE Lab uses the Kagent MCPServer CRD to deploy and manage these servers:
+
+```yaml
+apiVersion: kagent.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: postgres-mcp-server
+  namespace: kagent
+spec:
+  transportType: http
+  deployment:
+    image: crystaldba/postgres-mcp:latest
+    # Shell wrapper for secure credential injection
+    cmd: "/wrapper/entrypoint.sh"
+    args:
+    - --access-mode=unrestricted
+    volumeMounts:
+      # Mount credentials from CNPG-managed secrets
+    - name: postgres-secret
+      mountPath: /secrets/postgres
+```
+
+**Key Features**:
+- HTTP transport for Kubernetes-native integration
+- Secure credential management via mounted secrets
+- Shell wrapper pattern for dynamic DATABASE_URI construction
+- Auto-discovery of available tools (no manual tool definitions needed)
+
+### Agent-to-MCP Integration
+
+Agents reference MCP servers declaratively in their configuration:
+
+```yaml
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: dba-agent
+spec:
+  type: Declarative
+  declarative:
+    tools:
+    - type: McpServer
+      mcpServer:
+        apiGroup: kagent.dev
+        kind: MCPServer
+        name: postgres-mcp-server
+        toolNames:
+        - postgres_query
+        - postgres_explain_query
+        # ... additional tools
+```
+
+This architecture provides:
+- **Separation of Concerns**: MCP servers handle domain logic, agents orchestrate interactions
+- **Reusability**: Multiple agents can use the same MCP server
+- **Security**: Credentials isolated in Kubernetes secrets
+- **Observability**: Kubernetes-native monitoring and logging
+
 ## Usage
+
+### Access PostgreSQL Database
+
+```bash
+# Get database credentials
+kubectl get secret aire-postgres-app -n kagent -o jsonpath='{.data.password}' | base64 -d
+
+# Port-forward PostgreSQL
+kubectl port-forward -n kagent svc/aire-postgres-rw 5432:5432 --context kind-aire-lab
+
+# Connect with psql
+psql postgresql://aire:<password>@localhost:5432/airedb
+```
+
+### Interact with DBA Agent
+
+```bash
+# Port-forward Kagent UI
+kubectl port-forward -n kagent svc/kagent-ui 8082:8080 --context kind-aire-lab
+
+# Open http://localhost:8082 and select the "dba-agent"
+# Example queries:
+# - "Show me all tables in the database"
+# - "What events have been logged today?"
+# - "Analyze the performance of this query: SELECT * FROM application_events WHERE severity='error'"
+```
 
 ### Access AgentGateway
 
