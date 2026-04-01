@@ -18,9 +18,8 @@ spec:
       database: {{ .Values.postgres.database.name }}
       owner: {{ .Values.postgres.database.owner }}
       postInitApplicationSQL:
-        # Enable extensions for enhanced MCP server capabilities
+        # Enable pg_stat_statements for query statistics
         - CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
-        - CREATE EXTENSION IF NOT EXISTS hypopg;
       {{- if .Values.postgres.initdb.postInitApplicationSQL }}
       {{- range .Values.postgres.initdb.postInitApplicationSQL }}
         - {{ . | quote }}
