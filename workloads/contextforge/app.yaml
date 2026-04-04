@@ -37,6 +37,12 @@ spec:
             tag: "1.0.0-RC-2"
             pullPolicy: IfNotPresent
 
+          # Metrics (disable ServiceMonitor since Prometheus Operator is not installed)
+          metrics:
+            enabled: false
+            serviceMonitor:
+              enabled: false
+
           service:
             type: ClusterIP
             port: 80
@@ -55,11 +61,11 @@ spec:
           # Resource limits
           resources:
             requests:
-              cpu: 200m
-              memory: 512Mi
+              cpu: "200m"
+              memory: "512Mi"
             limits:
-              cpu: 1
-              memory: 1Gi
+              cpu: "1000m"
+              memory: "1Gi"
 
           # Health probes
           probes:
@@ -192,41 +198,70 @@ spec:
             BASIC_AUTH_USER: "admin"
             BASIC_AUTH_PASSWORD: "changeme"
 
-        # PostgreSQL subchart configuration
-        postgresql:
+        # PostgreSQL configuration
+        postgres:
           enabled: true
-          auth:
-            database: contextforge
-            username: contextforge
-            password: contextforge-pass-change-me
-          primary:
-            persistence:
-              enabled: true
-              size: 2Gi
-            resources:
-              requests:
-                cpu: 100m
-                memory: 256Mi
-              limits:
-                cpu: 500m
-                memory: 512Mi
+          image:
+            repository: postgres
+            tag: "17"
+            pullPolicy: IfNotPresent
 
-        # Redis subchart configuration
+          service:
+            type: ClusterIP
+            port: 5432
+
+          # Persistent storage
+          persistence:
+            enabled: true
+            storageClassName: ""  # Use default
+            size: 2Gi
+            accessModes: [ReadWriteOnce]
+            reclaimPolicy: Retain
+
+          # Database credentials
+          credentials:
+            database: contextforge
+            user: contextforge
+            password: contextforge-pass-change-me
+
+          # Resource limits
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          terminationGracePeriodSeconds: 120
+          lifecycle:
+            preStop:
+              enabled: true
+
+        # Redis configuration
         redis:
           enabled: true
+          image:
+            repository: redis
+            tag: latest
+            pullPolicy: IfNotPresent
+
+          service:
+            type: ClusterIP
+            port: 6379
+
+          # Authentication (disabled for local dev)
           auth:
-            enabled: false  # Simplified for local development
-          master:
-            persistence:
-              enabled: true
-              size: 1Gi
-            resources:
-              requests:
-                cpu: 50m
-                memory: 128Mi
-              limits:
-                cpu: 200m
-                memory: 256Mi
+            enabled: false
+
+          # Resource limits
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
 
         # Optional admin tools (disabled by default)
         pgadmin:
