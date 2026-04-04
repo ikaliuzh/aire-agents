@@ -1,0 +1,158 @@
+{{- if .Values.agents.adkRoot.enabled }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.agents.adkRoot.name }}
+  namespace: {{ .Values.agents.adkRoot.namespace }}
+  labels:
+    app.kubernetes.io/name: adk-root-agent
+    app.kubernetes.io/part-of: aire
+    app.kubernetes.io/component: agent
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.agents.adkRoot.name }}-config
+  namespace: {{ .Values.agents.adkRoot.namespace }}
+  labels:
+    app.kubernetes.io/name: adk-root-agent
+    app.kubernetes.io/part-of: aire
+data:
+  DBA_AGENT_URL: "http://dba-agent.{{ .Values.agents.adkRoot.namespace }}.svc.cluster.local:8080"
+  SCHEMA_FILE: "/app/schema.sql"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.agents.adkRoot.name }}
+  namespace: {{ .Values.agents.adkRoot.namespace }}
+  labels:
+    app.kubernetes.io/name: adk-root-agent
+    app.kubernetes.io/part-of: aire
+    app.kubernetes.io/component: agent
+spec:
+  replicas: {{ .Values.agents.adkRoot.replicas | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: adk-root-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: adk-root-agent
+        app.kubernetes.io/part-of: aire
+        app.kubernetes.io/component: agent
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: {{ .Values.agents.adkRoot.name }}
+      containers:
+      - name: agent
+        image: {{ .Values.agents.adkRoot.image.repository }}:{{ .Values.agents.adkRoot.image.tag }}
+        imagePullPolicy: {{ .Values.agents.adkRoot.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        env:
+        - name: PORT
+          value: "8080"
+        - name: GOOGLE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.agentgateway.backends.gemini.secretName }}
+              key: Authorization
+              optional: false
+        envFrom:
+        - configMapRef:
+            name: {{ .Values.agents.adkRoot.name }}-config
+        resources:
+          {{- toYaml .Values.agents.adkRoot.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.agents.adkRoot.name }}
+  namespace: {{ .Values.agents.adkRoot.namespace }}
+  labels:
+    app.kubernetes.io/name: adk-root-agent
+    app.kubernetes.io/part-of: aire
+    app.kubernetes.io/component: agent
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app.kubernetes.io/name: adk-root-agent
+
+---
+# RBAC for Kubernetes API access (if needed for K8s tools)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Values.agents.adkRoot.name }}
+  namespace: {{ .Values.agents.adkRoot.namespace }}
+  labels:
+    app.kubernetes.io/name: adk-root-agent
+    app.kubernetes.io/part-of: aire
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["postgresql.cnpg.io"]
+  resources: ["clusters", "backups"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Values.agents.adkRoot.name }}
+  namespace: {{ .Values.agents.adkRoot.namespace }}
+  labels:
+    app.kubernetes.io/name: adk-root-agent
+    app.kubernetes.io/part-of: aire
+subjects:
+- kind: ServiceAccount
+  name: {{ .Values.agents.adkRoot.name }}
+  namespace: {{ .Values.agents.adkRoot.namespace }}
+roleRef:
+  kind: Role
+  name: {{ .Values.agents.adkRoot.name }}
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

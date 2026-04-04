@@ -1,0 +1,73 @@
+[tool.poetry]
+name = "adk-root-agent"
+version = "1.0.0"
+description = "Google ADK-based agent with pure A2A capabilities for database orchestration"
+authors = ["Illia Kaliuzhnyi <ikaliuzh@example.com>"]
+readme = "README.md"
+license = "Apache-2.0"
+packages = [{include = "agent.py"}]
+
+[tool.poetry.dependencies]
+python = "^3.13"
+google-adk = {extras = ["a2a"], version = "^1.28.1"}
+fastapi = "^0.124.1"
+uvicorn = {extras = ["standard"], version = "^0.34.0"}
+httpx = "^0.28.1"
+opentelemetry-api = "^1.36.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+pytest-asyncio = "^0.23.0"
+pytest-cov = "^4.1.0"
+pytest-mock = "^3.12.0"
+ruff = "^0.8.0"
+mypy = "^1.13.0"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.0.0"
+pytest-asyncio = "^0.23.0"
+pytest-cov = "^4.1.0"
+pytest-mock = "^3.12.0"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--verbose",
+    "--cov=.",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+]
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

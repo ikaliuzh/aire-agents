@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+tasks:
+  install:
+    desc: Install dependencies with Poetry
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - poetry install --no-interaction
+
+  test:
+    desc: Run unit tests
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - poetry run pytest tests/ -v
+
+  test-cov:
+    desc: Run tests with coverage
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - poetry run pytest
+
+  lint:
+    desc: Run linting with ruff
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - poetry run ruff check .
+
+  format:
+    desc: Format code with ruff
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - poetry run ruff check --fix .
+
+  type-check:
+    desc: Run type checking with mypy
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - poetry run mypy agent.py
+
+  check-all:
+    desc: Run all checks (lint, type-check, test)
+    dir: '{{.TASKFILE_DIR}}'
+    deps:
+      - lint
+      - type-check
+      - test
+
+  clean:
+    desc: Remove generated files and caches
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - rm -rf .pytest_cache .ruff_cache .mypy_cache htmlcov .coverage
+      - find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+      - find . -type f -name "*.pyc" -delete
+
+  build:
+    desc: Build Docker image
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - docker build -t ikaliuzh/aire-agent-root:latest .
+      - docker tag ikaliuzh/aire-agent-root:latest ikaliuzh/aire-agent-root:{{.VERSION | default "dev"}}
+
+  push:
+    desc: Push Docker image to Docker Hub
+    dir: '{{.TASKFILE_DIR}}'
+    deps:
+      - build
+    cmds:
+      - docker push ikaliuzh/aire-agent-root:latest
+      - docker push ikaliuzh/aire-agent-root:{{.VERSION | default "dev"}}
+
+  run:
+    desc: Run the agent locally
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - poetry run python agent.py
+
+  shell:
+    desc: Activate Poetry shell
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - poetry shell
+
+  update:
+    desc: Update dependencies
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - poetry update
+
+  lock:
+    desc: Regenerate lock file
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - poetry lock --no-interaction

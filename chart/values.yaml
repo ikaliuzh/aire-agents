@@ -97,3 +97,21 @@ agents:
       limits:
         cpu: 500m
         memory: 512Mi
+
+  adkRoot:
+    enabled: true
+    name: adk-root-agent
+    namespace: kagent
+    description: Google ADK-based agent for database schema management with A2A capabilities
+    replicas: 1
+    image:
+      repository: ikaliuzh/aire-agent-root
+      tag: latest
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi

@@ -295,6 +295,155 @@ The AI Database Administrator agent specializes in PostgreSQL operations and pro
 "What are the most common event types?"
 ```
 
+#### ADK Root Agent (A2A Integration)
+
+The ADK Root Agent is a Google ADK-based agent that demonstrates **Agent-to-Agent (A2A) communication** capabilities. It serves as a database schema manager that can delegate complex database operations to the DBA agent.
+
+**Built with**:
+- **Google ADK** (Agent Development Kit) v1.28.1
+- **A2A Protocol** - JSON-RPC 2.0 over HTTP for agent-to-agent communication
+- **FastAPI + Uvicorn** - REST API server for A2A endpoints
+- **Pure Orchestration** - No direct database access, delegates everything via A2A
+
+**Key Capabilities**:
+- **Database Schema Management**: Create databases with predefined schemas by delegating to DBA agent
+- **A2A Delegation**: ALL database operations delegated to the DBA agent (queries, analysis, optimization, maintenance)
+- **Clean Architecture**: Pure orchestrator with no database dependencies
+- **Production Ready**: Health checks, logging, RBAC, resource limits
+
+**Architecture** (Pure A2A - No Direct Database Access):
+```
+┌─────────────────────┐
+│   ADK Root Agent    │  <-- Google ADK (Python)
+│   (Deployment)      │      FastAPI/Uvicorn
+│                     │      Port 8080
+│   NO DB ACCESS      │      Pure Orchestrator
+└──────────┬──────────┘
+           │
+           │ ALL operations via A2A
+           │ (HTTP/JSON-RPC)
+           │
+           ▼
+┌─────────────────────┐
+│  DBA Agent          │  <-- Kagent Framework
+│  (Agent CRD)        │      Database Expert
+│                     │
+│  A2A Skills:        │
+│  - Queries          │
+│  - Schema Creation  │
+│  - Analysis         │
+│  - Optimization     │
+│  - Maintenance      │
+│         │           │
+│         ▼           │
+│  PostgreSQL MCP     │
+│  Server             │
+└─────────────────────┘
+```
+
+**Deployment**:
+- **Namespace**: `kagent`
+- **Name**: `adk-root-agent`
+- **Service**: `adk-root-agent.kagent.svc.cluster.local:8080`
+- **Image**: `ikaliuzh/aire-agent-root:latest`
+
+**Available DBA Agent Skills** (via A2A):
+- `database-queries` - Execute SQL queries and retrieve data
+- `schema-inspection` - Inspect database schemas and structures
+- `performance-optimization` - Analyze and optimize query performance
+- `database-maintenance` - Perform VACUUM and ANALYZE operations
+- `data-analysis` - Analyze data patterns and generate insights
+
+**Example Workflows**:
+```bash
+# 1. Create a new database with predefined schema
+"Create a test database called 'metrics_db' with the default schema"
+
+# 2. Delegate to DBA agent for analysis
+"Ask the DBA agent to analyze the table statistics for metrics_db"
+
+# 3. Combined workflow
+"Create a new database, populate it with sample data, and ask the DBA agent for performance insights"
+```
+
+**Building and Deploying**:
+```bash
+# Build the Docker image (uses Poetry)
+task agent:build
+
+# Push to Docker Hub
+task agent:push VERSION=v1.0.0
+
+# Run tests locally
+task agent:test
+
+# Run all checks
+task agent:check-all
+
+# Deploy via Helm (enabled by default in values.yaml)
+kubectl get deployment -n kagent adk-root-agent
+kubectl get svc -n kagent adk-root-agent
+```
+
+**Local Development** (requires [Poetry](https://python-poetry.org/)):
+```bash
+# All tasks available with agent: prefix
+task agent:install      # Install dependencies
+task agent:test         # Run tests
+task agent:test-cov     # Tests with coverage
+task agent:lint         # Linting
+task agent:format       # Format code
+task agent:type-check   # Type checking
+task agent:run          # Run agent locally
+
+# Or use poetry directly
+cd agents/adk-root
+poetry install
+poetry run pytest
+```
+
+**Configuration** (in `chart/values.yaml`):
+```yaml
+agents:
+  adkRoot:
+    enabled: true
+    name: adk-root-agent
+    namespace: kagent
+    replicas: 1
+    image:
+      repository: ikaliuzh/aire-agent-root
+      tag: latest
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+```
+
+**Testing A2A Communication**:
+```bash
+# Port-forward to the ADK agent
+kubectl port-forward -n kagent svc/adk-root-agent 8080:8080
+
+# Query the agent via A2A protocol
+curl -X POST http://localhost:8080/invoke \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Create a test database and analyze its performance"
+  }'
+```
+
+**Development**:
+See [agents/adk-root/README.md](agents/adk-root/README.md) for detailed development documentation, including:
+- Local development setup
+- Adding custom schemas
+- Extending A2A capabilities
+- Unit testing
+- Troubleshooting
+
 ### MCP Server Architecture
 
 MCP (Model Context Protocol) servers provide specialized capabilities to AI agents. The AIRE Lab uses the Kagent MCPServer CRD to deploy and manage these servers:

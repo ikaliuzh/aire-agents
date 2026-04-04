@@ -4,6 +4,11 @@ version: '3'
 
 dotenv: ['.env']
 
+includes:
+  agent:
+    taskfile: ./agents/adk-root/Taskfile.yml
+    dir: ./agents/adk-root
+
 tasks:
   up:
     desc: |
@@ -75,3 +80,29 @@ tasks:
         stringData:
           Authorization: $GEMINI_API_KEY
         EOF
+
+  # ADK Agent Tasks (legacy aliases - use 'task agent:*' instead)
+  build-adk-agent:
+    desc: |
+      Build Docker image for ADK Root Agent (use 'task agent:build')
+    cmds:
+      - task: agent:build
+
+  push-adk-agent:
+    desc: |
+      Push ADK Root Agent image to Docker Hub (use 'task agent:push')
+    cmds:
+      - task: agent:push
+
+  test-adk-agent:
+    desc: |
+      Run unit tests for ADK Root Agent (use 'task agent:test')
+    cmds:
+      - task: agent:test
+
+  lint-adk-agent:
+    desc: |
+      Run linting and type checking for ADK Root Agent (use 'task agent:check-all')
+    cmds:
+      - task: agent:lint
+      - task: agent:type-check
