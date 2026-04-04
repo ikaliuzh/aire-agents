@@ -1,0 +1,261 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: contextforge
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+spec:
+  destination:
+    namespace: contextforge
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    repoURL: https://github.com/IBM/mcp-context-forge.git
+    path: charts/mcp-stack
+    targetRevision: v1.0.0-RC2
+    helm:
+      valuesObject:
+        # Global settings
+        global:
+          nameOverride: ""
+          fullnameOverride: ""
+
+        # Service Account
+        serviceAccount:
+          create: true
+          name: ""
+          annotations: {}
+          automountServiceAccountToken: false
+
+        # ContextForge Gateway Configuration
+        mcpContextForge:
+          replicaCount: 2
+
+          image:
+            repository: ghcr.io/ibm/mcp-context-forge
+            tag: "1.0.0-RC-2"
+            pullPolicy: IfNotPresent
+
+          service:
+            type: ClusterIP
+            port: 80
+            annotations: {}
+
+          containerPort: 4444
+
+          # HPA for auto-scaling
+          hpa:
+            enabled: true
+            minReplicas: 2
+            maxReplicas: 5
+            targetCPUUtilizationPercentage: 80
+            targetMemoryUtilizationPercentage: 80
+
+          # Resource limits
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1
+              memory: 1Gi
+
+          # Health probes
+          probes:
+            startup:
+              type: exec
+              command: ["sh", "-c", "sleep 10"]
+              timeoutSeconds: 15
+              periodSeconds: 5
+              failureThreshold: 1
+
+            readiness:
+              type: http
+              path: /ready
+              port: 4444
+              initialDelaySeconds: 15
+              periodSeconds: 10
+              timeoutSeconds: 2
+              successThreshold: 1
+              failureThreshold: 3
+
+            liveness:
+              type: http
+              path: /health
+              port: 4444
+              initialDelaySeconds: 10
+              periodSeconds: 15
+              timeoutSeconds: 2
+              successThreshold: 1
+              failureThreshold: 3
+
+          # Ingress (disabled for local Kind cluster)
+          ingress:
+            enabled: false
+
+          # Environment variables
+          env:
+            host: "0.0.0.0"
+            postgres:
+              port: 5432
+              db: contextforge
+              userKey: POSTGRES_USER
+              passwordKey: POSTGRES_PASSWORD
+            redis:
+              host: ""  # Uses subchart service name
+              port: 6379
+
+          # Application configuration
+          config:
+            # Server configuration
+            HTTP_SERVER: "gunicorn"
+            GUNICORN_WORKERS: "2"
+            GUNICORN_TIMEOUT: "600"
+            GUNICORN_MAX_REQUESTS: "100000"
+            GUNICORN_MAX_REQUESTS_JITTER: "100"
+            GUNICORN_PRELOAD_APP: "true"
+
+            # App settings
+            APP_NAME: "AIRE-ContextForge"
+            HOST: "0.0.0.0"
+            PORT: "4444"
+
+            # UI and API
+            MCPGATEWAY_UI_ENABLED: "true"
+            MCPGATEWAY_ADMIN_API_ENABLED: "true"
+
+            # Database connection
+            DB_POOL_SIZE: "15"
+            DB_MAX_OVERFLOW: "30"
+            DB_POOL_TIMEOUT: "30"
+            DB_POOL_RECYCLE: "3600"
+
+            # Cache configuration
+            CACHE_TYPE: "redis"
+            CACHE_PREFIX: "mcpgw:"
+            SESSION_TTL: "3600"
+            MESSAGE_TTL: "600"
+
+            # Redis settings
+            REDIS_MAX_CONNECTIONS: "50"
+            REDIS_SOCKET_TIMEOUT: "2.0"
+            REDIS_SOCKET_CONNECT_TIMEOUT: "2.0"
+            REDIS_RETRY_ON_TIMEOUT: "true"
+            REDIS_HEALTH_CHECK_INTERVAL: "30"
+            REDIS_DECODE_RESPONSES: "true"
+
+            # SSRF Protection - Allow private networks for in-cluster communication
+            SSRF_PROTECTION_ENABLED: "true"
+            SSRF_ALLOW_LOCALHOST: "false"
+            SSRF_ALLOW_PRIVATE_NETWORKS: "true"
+            SSRF_ALLOWED_NETWORKS: '["10.96.0.0/12"]'  # Kind service CIDR
+            SSRF_DNS_FAIL_CLOSED: "true"
+
+            # Auth caching
+            AUTH_CACHE_ENABLED: "true"
+            AUTH_CACHE_USER_TTL: "60"
+            AUTH_CACHE_REVOCATION_TTL: "30"
+
+            # Registry caching
+            REGISTRY_CACHE_ENABLED: "true"
+            REGISTRY_CACHE_TOOLS_TTL: "20"
+            REGISTRY_CACHE_PROMPTS_TTL: "15"
+            REGISTRY_CACHE_RESOURCES_TTL: "15"
+            REGISTRY_CACHE_AGENTS_TTL: "20"
+            REGISTRY_CACHE_SERVERS_TTL: "20"
+            REGISTRY_CACHE_GATEWAYS_TTL: "20"
+            REGISTRY_CACHE_CATALOG_TTL: "300"
+
+            # Security
+            SECURE_COOKIES: "false"  # HTTP for local Kind cluster
+            PUBLIC_REGISTRATION_ENABLED: "false"
+            REQUIRE_JTI: "true"
+            REQUIRE_TOKEN_EXPIRATION: "true"
+
+            # Content limits
+            CONTENT_MAX_RESOURCE_SIZE: "102400"  # 100KB
+            CONTENT_MAX_PROMPT_SIZE: "10240"     # 10KB
+
+          # Secrets (sensitive configuration)
+          secret:
+            # IMPORTANT: Change these values!
+            JWT_SECRET_KEY: "my-test-key-but-now-longer-than-32-bytes-for-aire-lab"
+            AUTH_ENCRYPTION_SECRET: "my-test-salt-but-now-longer-than-32-bytes-for-aire"
+
+            # Admin user credentials
+            PLATFORM_ADMIN_EMAIL: "admin@aire-lab.local"
+            PLATFORM_ADMIN_PASSWORD: "changeme123"
+            PLATFORM_ADMIN_FULL_NAME: "AIRE Lab Administrator"
+
+            # Basic auth (optional, for backward compatibility)
+            BASIC_AUTH_USER: "admin"
+            BASIC_AUTH_PASSWORD: "changeme"
+
+        # PostgreSQL subchart configuration
+        postgresql:
+          enabled: true
+          auth:
+            database: contextforge
+            username: contextforge
+            password: contextforge-pass-change-me
+          primary:
+            persistence:
+              enabled: true
+              size: 2Gi
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
+
+        # Redis subchart configuration
+        redis:
+          enabled: true
+          auth:
+            enabled: false  # Simplified for local development
+          master:
+            persistence:
+              enabled: true
+              size: 1Gi
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                cpu: 200m
+                memory: 256Mi
+
+        # Optional admin tools (disabled by default)
+        pgadmin:
+          enabled: false
+
+        redisCommander:
+          enabled: false
+
+        # Testing tools (disabled)
+        testing:
+          fastTime:
+            enabled: false
+            register:
+              enabled: false
+          fastTest:
+            enabled: false
+            register:
+              enabled: false
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

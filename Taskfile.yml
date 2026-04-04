@@ -58,6 +58,7 @@ tasks:
       - kubectl create namespace kagent --context kind-aire-lab --dry-run=client -o yaml | kubectl apply -f - --context kind-aire-lab
       - kubectl create namespace cnpg-system --context kind-aire-lab --dry-run=client -o yaml | kubectl apply -f - --context kind-aire-lab
       - kubectl create namespace aire-lab --context kind-aire-lab --dry-run=client -o yaml | kubectl apply -f - --context kind-aire-lab
+      - kubectl create namespace contextforge --context kind-aire-lab --dry-run=client -o yaml | kubectl apply -f - --context kind-aire-lab
 
   deploy-day-0:
     desc: |
@@ -107,3 +108,41 @@ tasks:
     cmds:
       - task: agent:lint
       - task: agent:type-check
+
+  # Context Forge Tasks
+  contextforge-ui:
+    desc: |
+      Port-forward to Context Forge Admin UI
+    cmd: kubectl port-forward -n contextforge svc/contextforge-mcp-context-forge 4444:80 --context kind-aire-lab
+
+  contextforge-token:
+    desc: |
+      Generate JWT token for Context Forge API access
+    cmd: |
+      echo "Generating token for admin@aire-lab.local (valid for 1 week)..."
+      kubectl exec -n contextforge deployment/contextforge-mcp-context-forge --context kind-aire-lab -- \
+        python3 -m mcpgateway.utils.create_jwt_token \
+        --username admin@aire-lab.local \
+        --exp 10080 \
+        --secret my-test-key-but-now-longer-than-32-bytes-for-aire-lab
+
+  contextforge-logs:
+    desc: |
+      Tail Context Forge logs
+    cmd: kubectl logs -n contextforge -l app.kubernetes.io/name=mcp-context-forge -f --context kind-aire-lab
+
+  contextforge-status:
+    desc: |
+      Check Context Forge deployment status
+    cmds:
+      - echo "=== Pods ==="
+      - kubectl get pods -n contextforge --context kind-aire-lab
+      - echo ""
+      - echo "=== Services ==="
+      - kubectl get svc -n contextforge --context kind-aire-lab
+      - echo ""
+      - echo "=== HPA ==="
+      - kubectl get hpa -n contextforge --context kind-aire-lab
+      - echo ""
+      - echo "=== PVC ==="
+      - kubectl get pvc -n contextforge --context kind-aire-lab

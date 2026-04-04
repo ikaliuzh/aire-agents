@@ -68,6 +68,7 @@ graph TD
     B --> E[Kagent<br/>Wave 3-4]
     D --> F[AIRE Config<br/>Wave 5]
     E --> F
+    F --> G[Context Forge<br/>Wave 6]
 
     style A fill:#326CE5,stroke:#fff,stroke-width:2px,color:#fff
     style B fill:#FF6B6B,stroke:#fff,stroke-width:2px,color:#fff
@@ -75,6 +76,7 @@ graph TD
     style D fill:#95E1D3,stroke:#333,stroke-width:2px
     style E fill:#F38181,stroke:#333,stroke-width:2px
     style F fill:#AA96DA,stroke:#fff,stroke-width:2px,color:#fff
+    style G fill:#FFA07A,stroke:#333,stroke-width:2px
 ```
 
 ### Component Architecture
@@ -169,6 +171,20 @@ graph LR
   - PostgreSQL cluster with CloudNativePG operator
   - MCP servers (Model Context Protocol) for specialized integrations
   - Custom AI agents (DBA, infrastructure reliability engineering)
+
+#### 5. Context Forge (Wave 6)
+- **Purpose**: IBM's MCP Gateway & Registry for centralized MCP server management and observability
+- **Namespace**: `contextforge`
+- **Version**: v1.0.0-RC2
+- **Features**:
+  - MCP server federation and registry
+  - A2A (Agent-to-Agent) protocol support
+  - API Gateway with rate limiting, auth, retries
+  - Admin UI for real-time management
+  - OpenTelemetry observability (Phoenix, Jaeger, Zipkin)
+  - Multi-tenancy with user/team RBAC
+  - Tool composition via virtual servers
+  - gRPC-to-MCP translation
 
 ### Data Flow
 
@@ -558,6 +574,53 @@ The Kagent UI provides:
 - Real-time Kubernetes operations
 - Agent execution history and logs
 - Configuration management
+
+### Access Context Forge
+
+```bash
+# Port-forward the Context Forge service (or use task)
+task contextforge-ui
+# OR manually:
+# kubectl port-forward -n contextforge svc/contextforge-mcp-context-forge 4444:80 --context kind-aire-lab
+
+# Open http://localhost:4444/admin
+# Login: admin@aire-lab.local / changeme123
+
+# Generate API token for CLI access
+task contextforge-token
+```
+
+Context Forge provides:
+- **Admin UI**: Web-based management interface
+- **MCP Server Registry**: Register and manage MCP servers
+- **Tool Catalog**: Browse available tools across all MCP servers
+- **Virtual Servers**: Create custom tool bundles
+- **API Gateway**: Centralized routing and authentication
+- **Observability**: Request tracing and metrics
+- **Multi-tenancy**: User and team management
+
+**Quick API Test**:
+```bash
+# Export token from task contextforge-token
+export CONTEXTFORGE_TOKEN="your-token-here"
+
+# Test health
+curl -H "Authorization: Bearer $CONTEXTFORGE_TOKEN" http://localhost:4444/health | jq
+
+# List available tools
+curl -H "Authorization: Bearer $CONTEXTFORGE_TOKEN" http://localhost:4444/tools | jq
+
+# Register postgres-mcp-server
+curl -X POST http://localhost:4444/gateways \
+  -H "Authorization: Bearer $CONTEXTFORGE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "postgres_mcp",
+    "url": "http://postgres-mcp-server.kagent.svc.cluster.local:80/mcp"
+  }'
+```
+
+See [workloads/contextforge/README.md](workloads/contextforge/README.md) for detailed usage.
 
 ### Access ArgoCD UI
 
