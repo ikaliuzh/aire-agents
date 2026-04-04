@@ -311,7 +311,7 @@ The ADK Root Agent is a Google ADK-based agent that demonstrates **Agent-to-Agen
 - **Clean Architecture**: Pure orchestrator with no database dependencies
 - **Production Ready**: Health checks, logging, RBAC, resource limits
 
-**Architecture** (Pure A2A - No Direct Database Access):
+**Architecture** (Pure A2A + AgentGateway):
 ```
 ┌─────────────────────┐
 │   ADK Root Agent    │  <-- Google ADK (Python)
@@ -320,21 +320,21 @@ The ADK Root Agent is a Google ADK-based agent that demonstrates **Agent-to-Agen
 │   NO DB ACCESS      │      Pure Orchestrator
 └──────────┬──────────┘
            │
-           │ ALL operations via A2A
-           │ (HTTP/JSON-RPC)
-           │
-           ▼
-┌─────────────────────┐
-│  DBA Agent          │  <-- Kagent Framework
-│  (Agent CRD)        │      Database Expert
-│                     │
-│  A2A Skills:        │
-│  - Queries          │
-│  - Schema Creation  │
-│  - Analysis         │
-│  - Optimization     │
-│  - Maintenance      │
-│         │           │
+           ├─────────────────────┐
+           │ A2A (Database ops)  │ OpenAI API (AI requests)
+           │                     │
+           ▼                     ▼
+┌─────────────────────┐   ┌─────────────────────┐
+│  DBA Agent          │   │  AgentGateway       │
+│  (Agent CRD)        │   │  Proxy              │
+│                     │   │                     │
+│  A2A Skills:        │   │  Centralized Auth   │
+│  - Queries          │   │  for Gemini API     │
+│  - Schema Creation  │   │                     │
+│  - Analysis         │   └──────────┬──────────┘
+│  - Optimization     │              │
+│  - Maintenance      │              ▼
+│         │           │        Gemini API
 │         ▼           │
 │  PostgreSQL MCP     │
 │  Server             │

@@ -6,6 +6,7 @@ This agent is responsible for:
 2. Querying the DBA agent for insights via A2A protocol
 
 All database operations are delegated to the DBA agent via A2A communication.
+All AI requests route through AgentGateway proxy (not direct to Gemini).
 """
 
 import os
@@ -15,6 +16,7 @@ from typing import Any
 import httpx
 from google.adk import Agent
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
+from openai import OpenAI
 
 # Configure logging
 logging.basicConfig(
@@ -25,8 +27,20 @@ logger = logging.getLogger(__name__)
 
 # Environment configuration
 DBA_AGENT_URL = os.getenv('DBA_AGENT_URL', 'http://dba-agent.kagent.svc.cluster.local:8080')
+AGENTGATEWAY_URL = os.getenv('AGENTGATEWAY_URL', 'http://agentgateway-proxy.agentgateway-system.svc.cluster.local:80/gemini')
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', '')
+GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
 SCHEMA_FILE = os.getenv('SCHEMA_FILE', '/app/schema.sql')
+
+# Configure OpenAI client to use AgentGateway
+# AgentGateway provides an OpenAI-compatible API for Gemini
+openai_client = OpenAI(
+    base_url=AGENTGATEWAY_URL,
+    api_key=GOOGLE_API_KEY or 'dummy-key'  # AgentGateway handles real auth
+)
+
+logger.info(f"Using AgentGateway at: {AGENTGATEWAY_URL}")
+logger.info(f"Model: {GEMINI_MODEL}")
 
 
 async def create_database_schema(database_name: str = "testdb", schema_file: str = SCHEMA_FILE) -> dict[str, Any]:
@@ -150,7 +164,8 @@ async def query_dba_agent(skill_id: str, prompt: str) -> dict[str, Any]:
 # Define the root agent
 root_agent = Agent(
     name='adk-root-agent',
-    model='gemini-2.5-flash',
+    model=GEMINI_MODEL,
+    client=openai_client,  # Use AgentGateway instead of direct Gemini
     instruction="""
     You are the ADK Root Agent, a database schema manager that orchestrates database
     operations by delegating ALL database tasks to a specialized DBA agent via A2A

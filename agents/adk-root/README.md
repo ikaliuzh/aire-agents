@@ -4,15 +4,17 @@ A Google ADK-based agent with Agent-to-Agent (A2A) capabilities for database sch
 
 ## Overview
 
-The ADK Root Agent serves as a high-level orchestrator for database operations, demonstrating **pure A2A (Agent-to-Agent) architecture**:
+The ADK Root Agent serves as a high-level orchestrator for database operations, demonstrating **pure A2A (Agent-to-Agent) architecture** with **centralized authentication**:
 
 1. **Database Schema Management**: Creates new databases with predefined schemas by delegating to the DBA agent
 2. **A2A Delegation**: ALL database operations are delegated to the specialized DBA agent via A2A protocol
-3. **No Direct Database Access**: The agent has no direct PostgreSQL access - it's a pure orchestrator
+3. **AgentGateway Routing**: ALL AI requests route through AgentGateway proxy (not direct to Gemini)
+4. **No Direct Access**: The agent has no direct PostgreSQL or Gemini API access - it's a pure orchestrator
 
 This architecture demonstrates clean separation of concerns:
 - **ADK Root Agent**: Orchestration, schema templates, high-level workflows
 - **DBA Agent**: Database execution, expertise, direct MCP access
+- **AgentGateway**: Centralized authentication and API routing for all AI requests
 
 ## Architecture
 
@@ -49,8 +51,10 @@ This architecture demonstrates clean separation of concerns:
 ## Features
 
 - **Pure A2A Architecture**: ALL database operations via Agent-to-Agent protocol
+- **AgentGateway Integration**: ALL AI requests route through AgentGateway proxy (no direct Gemini access)
 - **Schema Templates**: Predefined SQL schemas for common use cases
 - **No Direct Database Access**: Delegates everything to DBA agent for clean separation
+- **Centralized Authentication**: Uses AgentGateway for unified API key management
 - **Production Ready**: Includes health checks, logging, and error handling
 - **Kubernetes Native**: Designed for deployment in Kubernetes clusters
 - **Simplified Dependencies**: No MCP or database drivers needed
@@ -62,11 +66,15 @@ This architecture demonstrates clean separation of concerns:
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `DBA_AGENT_URL` | URL of the Kagent DBA agent | `http://dba-agent.kagent.svc.cluster.local:8080` |
-| `GOOGLE_API_KEY` | Google API key for Gemini | Required |
+| `AGENTGATEWAY_URL` | AgentGateway proxy endpoint | `http://agentgateway-proxy.agentgateway-system.svc.cluster.local:80/gemini` |
+| `GEMINI_MODEL` | Gemini model to use | `gemini-2.5-flash` |
+| `GOOGLE_API_KEY` | API key (routed through AgentGateway) | Required |
 | `SCHEMA_FILE` | Path to SQL schema file | `/app/schema.sql` |
 | `PORT` | HTTP server port | `8080` |
 
-**Note**: No `DATABASE_URI` needed - all database access is via DBA agent delegation.
+**Note**: 
+- No `DATABASE_URI` needed - all database access is via DBA agent delegation
+- AI requests route through AgentGateway (not direct to Gemini) for centralized auth
 
 ### DBA Agent Skills
 
