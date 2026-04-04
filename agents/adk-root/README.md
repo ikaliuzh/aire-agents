@@ -50,14 +50,16 @@ This architecture demonstrates clean separation of concerns:
 
 ## Features
 
-- **Pure A2A Architecture**: ALL database operations via Agent-to-Agent protocol
+- **Official A2A Protocol**: Uses Google ADK's `ClientFactory` and A2A client for proper agent-to-agent communication
 - **AgentGateway Integration**: ALL AI requests route through AgentGateway proxy (no direct Gemini access)
 - **Schema Templates**: Predefined SQL schemas for common use cases
-- **No Direct Database Access**: Delegates everything to DBA agent for clean separation
+- **No Direct Database Access**: Delegates everything to DBA agent via A2A protocol
 - **Centralized Authentication**: Uses AgentGateway for unified API key management
+- **Agent Card Discovery**: Automatic discovery of DBA agent capabilities via A2A
+- **Streaming Support**: Real-time responses from long-running DBA operations
 - **Production Ready**: Includes health checks, logging, and error handling
 - **Kubernetes Native**: Designed for deployment in Kubernetes clusters
-- **Simplified Dependencies**: No MCP or database drivers needed
+- **Clean Architecture**: BaseTool implementation for reusable A2A communication
 
 ## Configuration
 

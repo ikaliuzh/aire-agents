@@ -10,9 +10,9 @@ packages = [{include = "agent.py"}]
 [tool.poetry.dependencies]
 python = "^3.13"
 google-adk = {extras = ["a2a"], version = "^1.28.1"}
+# Note: a2a client is included in google-adk[a2a] extras
 fastapi = "^0.124.1"
 uvicorn = {extras = ["standard"], version = "^0.34.0"}
-httpx = "^0.28.1"
 openai = "^1.0.0"
 opentelemetry-api = "^1.36.0"
 
