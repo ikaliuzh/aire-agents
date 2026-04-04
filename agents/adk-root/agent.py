@@ -182,10 +182,11 @@ root_agent = Agent(
 a2a_app = to_a2a(root_agent)
 
 # Add health check endpoint for Kubernetes probes
-@a2a_app.get("/health")
 async def health_check():
     """Health check endpoint for liveness/readiness probes"""
     return {"status": "healthy", "agent": "adk_root_agent"}
+
+a2a_app.add_api_route("/health", health_check, methods=["GET"])
 
 logger.info("ADK Root Agent initialized and ready to serve on port 8080")
 
