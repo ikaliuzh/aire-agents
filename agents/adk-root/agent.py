@@ -16,7 +16,6 @@ from typing import Any
 from google.adk import Agent
 from google.adk.agents.remote_a2a_agent import RemoteA2aAgent, AGENT_CARD_WELL_KNOWN_PATH
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
-from openai import OpenAI
 
 # Configure logging
 logging.basicConfig(
@@ -28,17 +27,13 @@ logger = logging.getLogger(__name__)
 # Environment configuration
 DBA_AGENT_URL = os.getenv('DBA_AGENT_URL', 'http://dba-agent.kagent.svc.cluster.local:8080')
 AGENTGATEWAY_URL = os.getenv('AGENTGATEWAY_URL', 'http://agentgateway-proxy.agentgateway-system.svc.cluster.local:80/gemini')
-GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', '')
 GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
 SCHEMA_FILE = os.getenv('SCHEMA_FILE', '/app/schema.sql')
 
-# Configure OpenAI client to use AgentGateway
-# AgentGateway provides an OpenAI-compatible API for Gemini
-# No API key needed - AgentGateway handles authentication
-openai_client = OpenAI(
-    base_url=AGENTGATEWAY_URL,
-    api_key='not-needed'  # AgentGateway handles real auth
-)
+# Configure ADK to use AgentGateway by setting environment variables
+# that the OpenAI SDK (used internally by ADK) will respect
+os.environ['OPENAI_BASE_URL'] = AGENTGATEWAY_URL
+os.environ['OPENAI_API_KEY'] = 'not-needed'  # AgentGateway handles real auth
 
 logger.info(f"Using AgentGateway at: {AGENTGATEWAY_URL}")
 logger.info(f"Model: {GEMINI_MODEL}")
@@ -120,9 +115,8 @@ async def create_database_schema(database_name: str = "testdb", schema_file: str
 
 # Define the root agent with DBA agent as sub_agent
 root_agent = Agent(
-    name='adk-root-agent',
+    name='adk_root_agent',
     model=GEMINI_MODEL,
-    client=openai_client,  # Use AgentGateway instead of direct Gemini
     instruction="""
     You are the ADK Root Agent, a database schema manager that orchestrates database
     operations by delegating ALL database tasks to a specialized DBA agent via A2A
@@ -186,6 +180,12 @@ root_agent = Agent(
 
 # Convert to A2A-compliant FastAPI application
 a2a_app = to_a2a(root_agent)
+
+# Add health check endpoint for Kubernetes probes
+@a2a_app.get("/health")
+async def health_check():
+    """Health check endpoint for liveness/readiness probes"""
+    return {"status": "healthy", "agent": "adk_root_agent"}
 
 logger.info("ADK Root Agent initialized and ready to serve on port 8080")
 
