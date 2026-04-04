@@ -342,9 +342,9 @@ The ADK Root Agent is a Google ADK-based agent that demonstrates **Agent-to-Agen
 ```
 
 **Deployment**:
-- **Namespace**: `kagent`
+- **Namespace**: `aire-lab`
 - **Name**: `adk-root-agent`
-- **Service**: `adk-root-agent.kagent.svc.cluster.local:8080`
+- **Service**: `adk-root-agent.aire-lab.svc.cluster.local:8080`
 - **Image**: `ikaliuzh/aire-agent-root:latest`
 
 **Available DBA Agent Skills** (via A2A):

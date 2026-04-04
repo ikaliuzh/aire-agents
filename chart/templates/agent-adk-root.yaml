@@ -20,7 +20,7 @@ metadata:
     app.kubernetes.io/name: adk-root-agent
     app.kubernetes.io/part-of: aire
 data:
-  DBA_AGENT_URL: "http://dba-agent.{{ .Values.agents.adkRoot.namespace }}.svc.cluster.local:8080"
+  DBA_AGENT_URL: "http://dba-agent.kagent.svc.cluster.local:8080"
   AGENTGATEWAY_URL: "http://{{ .Values.agentgateway.proxy.name }}.{{ .Values.agentgateway.namespace }}.svc.cluster.local:80{{ .Values.agentgateway.backends.gemini.route.path }}"
   GEMINI_MODEL: "{{ .Values.agentgateway.backends.gemini.model }}"
   SCHEMA_FILE: "/app/schema.sql"

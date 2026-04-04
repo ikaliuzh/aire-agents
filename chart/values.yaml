@@ -101,7 +101,7 @@ agents:
   adkRoot:
     enabled: true
     name: adk-root-agent
-    namespace: kagent
+    namespace: aire-lab
     description: Google ADK-based agent for database schema management with A2A capabilities
     replicas: 1
     image:
