@@ -107,7 +107,7 @@ agents:
     image:
       repository: ikaliuzh/aire-agent-root
       tag: latest
-      pullPolicy: IfNotPresent
+      pullPolicy: Always
     resources:
       requests:
         cpu: 100m
