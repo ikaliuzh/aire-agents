@@ -70,13 +70,13 @@ This architecture demonstrates clean separation of concerns:
 | `DBA_AGENT_URL` | URL of the Kagent DBA agent | `http://dba-agent.kagent.svc.cluster.local:8080` |
 | `AGENTGATEWAY_URL` | AgentGateway proxy endpoint | `http://agentgateway-proxy.agentgateway-system.svc.cluster.local:80/gemini` |
 | `GEMINI_MODEL` | Gemini model to use | `gemini-2.5-flash` |
-| `GOOGLE_API_KEY` | API key (routed through AgentGateway) | Required |
 | `SCHEMA_FILE` | Path to SQL schema file | `/app/schema.sql` |
 | `PORT` | HTTP server port | `8080` |
 
 **Note**: 
 - No `DATABASE_URI` needed - all database access is via DBA agent delegation
-- AI requests route through AgentGateway (not direct to Gemini) for centralized auth
+- No `GOOGLE_API_KEY` needed - AgentGateway handles authentication centrally
+- All AI requests route through AgentGateway (not direct to Gemini)
 
 ### DBA Agent Skills
 

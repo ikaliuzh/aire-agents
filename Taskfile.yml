@@ -67,7 +67,7 @@ tasks:
   apply-secrets:
     desc: |
       Apply secrets necessary for proper application functioning
-      Auth is centralized in AgentGateway - Kagent proxies through it
+      Auth is centralized in AgentGateway - only it needs the API key
     cmds:
       - |
         kubectl apply -f- <<EOF

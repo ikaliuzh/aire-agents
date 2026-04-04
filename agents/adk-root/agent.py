@@ -34,9 +34,10 @@ SCHEMA_FILE = os.getenv('SCHEMA_FILE', '/app/schema.sql')
 
 # Configure OpenAI client to use AgentGateway
 # AgentGateway provides an OpenAI-compatible API for Gemini
+# No API key needed - AgentGateway handles authentication
 openai_client = OpenAI(
     base_url=AGENTGATEWAY_URL,
-    api_key=GOOGLE_API_KEY or 'dummy-key'  # AgentGateway handles real auth
+    api_key='not-needed'  # AgentGateway handles real auth
 )
 
 logger.info(f"Using AgentGateway at: {AGENTGATEWAY_URL}")
