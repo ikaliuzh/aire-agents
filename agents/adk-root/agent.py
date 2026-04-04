@@ -185,7 +185,7 @@ root_agent = Agent(
 )
 
 # Convert to A2A-compliant FastAPI application
-a2a_app = to_a2a(root_agent, port=8080)
+a2a_app = to_a2a(root_agent)
 
 logger.info("ADK Root Agent initialized and ready to serve on port 8080")
 
